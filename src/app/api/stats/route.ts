@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { subDays, startOfDay, endOfDay, format } from "date-fns";
 
+// 强制动态路由，防止在 Next.js 构建阶段静态执行数据库查询
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/stats
  * 获取近 7 天积分趋势及习惯分布数据

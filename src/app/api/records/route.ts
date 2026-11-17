@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// 强制动态路由，防止在 Next.js 构建阶段静态执行数据库查询
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/records
  * 获取历史积分变动流水，支持分页和按类型过滤
