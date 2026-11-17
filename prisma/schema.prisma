@@ -1,7 +1,7 @@
 // Prisma 数据库模式定义
 // 默认采用 sqlite 实现本地开箱即用；迁移到云端 PostgreSQL 时只需修改 provider 为 "postgresql"
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
