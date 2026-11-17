@@ -1,0 +1,56 @@
+// Prisma 数据库模式定义
+// 默认采用 sqlite 实现本地开箱即用；迁移到云端 PostgreSQL 时只需修改 provider 为 "postgresql"
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 孩子主体表
+model Child {
+  id            String          @id @default(uuid())
+  name          String          // 孩子姓名/昵称
+  avatar        String          @default("👦") // 孩子头像或内置 Emoji
+  currentPoints Int             @default(0)    // 当前总积分（原生支持负分）
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  templates     PointTemplate[] // 关联的专属事项模板
+  records       PointRecord[]   // 关联的历史积分流水
+}
+
+// 积分事项模板表 (支持反复使用、微调)
+model PointTemplate {
+  id            String        @id @default(uuid())
+  childId       String?       // 关联的孩子 ID，如果为 null 则为全家通用模板
+  child         Child?        @relation(fields: [childId], references: [id], onDelete: Cascade)
+  title         String        // 事项名称，例如 "光盘行动", "整理房间", "打人顶嘴"
+  type          String        // 事项类型: "ADD"(加分) | "DEDUCT"(扣分)
+  defaultPoints Int           // 预设分值 (加分为正数，扣分为负数)
+  category      String        @default("日常") // 事项分类：自理习惯、学习态度、纪律礼貌等
+  icon          String        @default("Star") // 显示图标或 Emoji
+  sortOrder     Int           @default(0)      // 排序顺序，越小越靠前
+  isActive      Boolean       @default(true)   // 是否在快捷区展示
+  createdAt     DateTime      @default(now())
+
+  records       PointRecord[] // 引用该模板的历史记录
+}
+
+// 积分历史流水明细表 (只追加历史，保障审计和追溯)
+model PointRecord {
+  id           String         @id @default(uuid())
+  childId      String         // 关联孩子 ID
+  child        Child          @relation(fields: [childId], references: [id], onDelete: Cascade)
+  templateId   String?        // 关联的事项模板 ID（可为空，支持自由记一笔）
+  template     PointTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  title        String         // 事项名称（固化快照，模板后续修改名称不影响历史）
+  type         String         // 变动类型: "ADD" | "DEDUCT"
+  pointsChange Int            // 本次变动分值（例如 +5 或 -3）
+  balanceAfter Int            // 变动后的历史余额快照
+  remark       String?        // 备注详情
+  recordedAt   DateTime       @default(now()) // 行为实际发生时间（支持补录）
+  createdAt    DateTime       @default(now()) // 录入系统时间
+}
