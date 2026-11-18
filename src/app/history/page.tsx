@@ -76,6 +76,22 @@ export default function HistoryPage() {
 
   useEffect(() => {
     fetchRecords();
+
+    // 跨设备体验优化：当手机切回前台时，自动同步最新的历史流水记录
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("[HistoryPage] 检测到应用切回前台，正在自动同步云端流水...");
+        fetchRecords();
+      }
+    };
+
+    window.addEventListener("focus", fetchRecords);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", fetchRecords);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [fetchRecords]);
 
   // 撤销某笔记录

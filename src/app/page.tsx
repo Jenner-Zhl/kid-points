@@ -94,6 +94,22 @@ export default function HomePage() {
 
   useEffect(() => {
     fetchPageData();
+
+    // 跨设备体验优化：当手机切回前台或重新点亮屏幕时，自动静默同步云端最新积分
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        console.log("[HomePage] 检测到应用切回前台，正在自动同步云端最新积分...");
+        fetchPageData();
+      }
+    };
+
+    window.addEventListener("focus", fetchPageData);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", fetchPageData);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [fetchPageData]);
 
   // 更新孩子昵称
