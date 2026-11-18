@@ -111,6 +111,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // 变动分值不能为 0
+    if (finalPoints === 0) {
+      return NextResponse.json(
+        { success: false, error: "变动分值不能为 0 分" },
+        { status: 400 }
+      );
+    }
+
     // 单笔积分变动幅度防手抖上限 (最大 ±100 分)
     if (Math.abs(finalPoints) > 100) {
       return NextResponse.json(
@@ -126,20 +134,24 @@ export async function POST(request: Request) {
 
     // 使用数据库事务保证“插入流水”与“更新孩子当前总积分”原子一致
     const result = await prisma.$transaction(async (tx) => {
-      // 1. 获取目标孩子信息
-      let targetChild = reqChildId
-        ? await tx.child.findUnique({ where: { id: reqChildId } })
-        : await tx.child.findFirst();
-
-      if (!targetChild) {
-        // 若孩子不存在则创建初始孩子
-        targetChild = await tx.child.create({
-          data: {
-            name: "小宝",
-            avatar: "👦",
-            currentPoints: 0,
-          },
-        });
+      // 1. 获取目标孩子信息 (若传入了 childId 但找不到，严格报错拒绝入库)
+      let targetChild = null;
+      if (reqChildId) {
+        targetChild = await tx.child.findUnique({ where: { id: reqChildId } });
+        if (!targetChild) {
+          throw new Error("未找到指定的宝贝档案");
+        }
+      } else {
+        targetChild = await tx.child.findFirst();
+        if (!targetChild) {
+          targetChild = await tx.child.create({
+            data: {
+              name: "小宝",
+              avatar: "👦",
+              currentPoints: 0,
+            },
+          });
+        }
       }
 
       // 2. 计算变动后的积分余额（无下限限制，原生支持负数）

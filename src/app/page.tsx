@@ -38,6 +38,12 @@ interface ChildData {
 
 interface RecentRecord {
   id: string;
+  childId?: string;
+  child?: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
   title: string;
   type: string;
   pointsChange: number;
@@ -291,7 +297,14 @@ export default function HomePage() {
                 className="py-2.5 flex items-center justify-between text-xs"
               >
                 <div>
-                  <div className="font-semibold text-gray-800">{rec.title}</div>
+                  <div className="font-semibold text-gray-800 flex items-center space-x-1.5">
+                    {childrenList.length > 1 && rec.child && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700">
+                        {rec.child.avatar} {rec.child.name}
+                      </span>
+                    )}
+                    <span>{rec.title}</span>
+                  </div>
                   <div className="text-[11px] text-gray-400 flex items-center space-x-1 mt-0.5">
                     <Clock className="w-3 h-3" />
                     <span>{formatShortTime(rec.recordedAt)}</span>

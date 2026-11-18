@@ -32,36 +32,35 @@ export async function GET() {
 
     const startOfToday = getBeijingStartOfToday();
 
-    // 为每个孩子统计各自今日加分与扣分汇总
-    const enrichedChildren = await Promise.all(
-      allChildren.map(async (child) => {
-        const todayRecords = await prisma.pointRecord.findMany({
-          where: {
-            childId: child.id,
-            recordedAt: {
-              gte: startOfToday,
-            },
-          },
-        });
+    // 性能优化：单次批量查询所有孩子今日的流水记录，避免 N+1 数据库往返请求
+    const allTodayRecords = await prisma.pointRecord.findMany({
+      where: {
+        childId: { in: allChildren.map((c) => c.id) },
+        recordedAt: { gte: startOfToday },
+      },
+    });
 
-        let todayAdded = 0;
-        let todayDeducted = 0;
-        for (const r of todayRecords) {
-          if (r.pointsChange > 0) {
-            todayAdded += r.pointsChange;
-          } else {
-            todayDeducted += Math.abs(r.pointsChange);
-          }
-        }
+    // 内存中按孩子 ID 快速聚合今日收支
+    const childStatsMap = new Map<string, { added: number; deducted: number }>();
+    for (const r of allTodayRecords) {
+      const stats = childStatsMap.get(r.childId) || { added: 0, deducted: 0 };
+      if (r.pointsChange > 0) {
+        stats.added += r.pointsChange;
+      } else {
+        stats.deducted += Math.abs(r.pointsChange);
+      }
+      childStatsMap.set(r.childId, stats);
+    }
 
-        return {
-          ...child,
-          todayAdded,
-          todayDeducted,
-          todayNet: todayAdded - todayDeducted,
-        };
-      })
-    );
+    const enrichedChildren = allChildren.map((child) => {
+      const stats = childStatsMap.get(child.id) || { added: 0, deducted: 0 };
+      return {
+        ...child,
+        todayAdded: stats.added,
+        todayDeducted: stats.deducted,
+        todayNet: stats.added - stats.deducted,
+      };
+    });
 
     return NextResponse.json({
       success: true,
