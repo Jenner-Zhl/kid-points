@@ -16,6 +16,7 @@ interface PointTemplate {
 interface QuickActionModalProps {
   isOpen: boolean;
   template: PointTemplate | null;
+  child?: { id: string; name: string } | null;
   onClose: () => void;
   onSubmitSuccess: () => void;
 }
@@ -27,6 +28,7 @@ interface QuickActionModalProps {
 export const QuickActionModal: React.FC<QuickActionModalProps> = ({
   isOpen,
   template,
+  child,
   onClose,
   onSubmitSuccess,
 }) => {
@@ -63,6 +65,7 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          childId: child?.id,
           templateId: template.id,
           title: template.title,
           type: template.type,
@@ -102,9 +105,16 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
           <div className="flex items-center space-x-2">
             <span className="text-2xl">{template.icon}</span>
             <div>
-              <h3 className="text-lg font-bold text-gray-800">
-                {template.title}
-              </h3>
+              <div className="flex items-center space-x-1.5">
+                <h3 className="text-lg font-bold text-gray-800">
+                  {template.title}
+                </h3>
+                {child && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold">
+                    给 {child.name}
+                  </span>
+                )}
+              </div>
               <span className="text-xs text-gray-400">{template.category}</span>
             </div>
           </div>

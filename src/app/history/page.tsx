@@ -16,6 +16,11 @@ import { formatDateTime, formatPoints } from "@/lib/utils";
 interface PointRecord {
   id: string;
   childId: string;
+  child?: {
+    id: string;
+    name: string;
+    avatar: string;
+  };
   templateId?: string;
   title: string;
   type: string;
@@ -41,6 +46,8 @@ interface TrendDay {
 export default function HistoryPage() {
   const [records, setRecords] = useState<PointRecord[]>([]);
   const [filterType, setFilterType] = useState<string>("ALL");
+  const [childrenList, setChildrenList] = useState<{ id: string; name: string; avatar: string }[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState<string>("ALL");
   const [trend, setTrend] = useState<TrendDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [revertingId, setRevertingId] = useState<string | null>(null);
@@ -49,16 +56,19 @@ export default function HistoryPage() {
   const fetchRecords = useCallback(async () => {
     try {
       setLoading(true);
-      console.log(`[HistoryPage] 加载历史流水: filter=${filterType}`);
+      console.log(`[HistoryPage] 加载历史流水: filter=${filterType}, childId=${selectedChildId}`);
 
-      const [recordsRes, statsRes] = await Promise.all([
-        fetch(`/api/records?type=${filterType}&limit=100`),
-        fetch("/api/stats"),
+      const childParam = selectedChildId !== "ALL" ? `&childId=${selectedChildId}` : "";
+      const [recordsRes, statsRes, childrenRes] = await Promise.all([
+        fetch(`/api/records?type=${filterType}&limit=100${childParam}`),
+        fetch(`/api/stats${selectedChildId !== "ALL" ? `?childId=${selectedChildId}` : ""}`),
+        fetch("/api/children"),
       ]);
 
-      const [recordsJson, statsJson] = await Promise.all([
+      const [recordsJson, statsJson, childrenJson] = await Promise.all([
         recordsRes.json(),
         statsRes.json(),
+        childrenRes.json(),
       ]);
 
       if (recordsJson.success) {
@@ -67,12 +77,16 @@ export default function HistoryPage() {
       if (statsJson.success) {
         setTrend(statsJson.data.trend || []);
       }
+      if (childrenJson.success) {
+        const list = childrenJson.data.children || [childrenJson.data];
+        setChildrenList(list);
+      }
     } catch (error) {
       console.error("[HistoryPage] 获取历史流水失败:", error);
     } finally {
       setLoading(false);
     }
-  }, [filterType]);
+  }, [filterType, selectedChildId]);
 
   useEffect(() => {
     fetchRecords();
@@ -184,6 +198,36 @@ export default function HistoryPage() {
         </div>
       )}
 
+      {/* 孩子筛选切换（仅在多孩家庭时展示） */}
+      {childrenList.length > 1 && (
+        <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            onClick={() => setSelectedChildId("ALL")}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+              selectedChildId === "ALL"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+            }`}
+          >
+            全部宝贝
+          </button>
+          {childrenList.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setSelectedChildId(c.id)}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center space-x-1 ${
+                selectedChildId === c.id
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+              }`}
+            >
+              <span>{c.avatar}</span>
+              <span>{c.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 筛选标签切换 */}
       <div className="flex items-center space-x-2 bg-gray-100 p-1 rounded-2xl">
         {[
@@ -240,9 +284,16 @@ export default function HistoryPage() {
                     )}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-gray-800">
-                      {r.title}
-                    </h4>
+                    <div className="flex items-center space-x-1.5">
+                      {childrenList.length > 1 && r.child && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700">
+                          {r.child.avatar} {r.child.name}
+                        </span>
+                      )}
+                      <h4 className="text-sm font-bold text-gray-800">
+                        {r.title}
+                      </h4>
+                    </div>
                     {r.remark && (
                       <p className="text-xs text-gray-500 mt-0.5 bg-gray-50 px-2 py-0.5 rounded-md inline-block">
                         {r.remark}

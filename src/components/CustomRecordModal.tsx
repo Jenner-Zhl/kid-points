@@ -6,6 +6,7 @@ import { triggerConfetti } from "./ConfettiCelebration";
 
 interface CustomRecordModalProps {
   isOpen: boolean;
+  child?: { id: string; name: string } | null;
   onClose: () => void;
   onSubmitSuccess: () => void;
 }
@@ -16,6 +17,7 @@ interface CustomRecordModalProps {
  */
 export const CustomRecordModal: React.FC<CustomRecordModalProps> = ({
   isOpen,
+  child,
   onClose,
   onSubmitSuccess,
 }) => {
@@ -45,6 +47,7 @@ export const CustomRecordModal: React.FC<CustomRecordModalProps> = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          childId: child?.id,
           title: title.trim(),
           type,
           pointsChange,
@@ -80,7 +83,14 @@ export const CustomRecordModal: React.FC<CustomRecordModalProps> = ({
       <div className="relative z-10 w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden p-6 animate-slide-up">
         {/* 顶部标题与关闭 */}
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-          <h3 className="text-lg font-bold text-gray-800">自由记一笔</h3>
+          <div className="flex items-center space-x-1.5">
+            <h3 className="text-lg font-bold text-gray-800">自由记一笔</h3>
+            {child && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 font-bold">
+                给 {child.name}
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition"

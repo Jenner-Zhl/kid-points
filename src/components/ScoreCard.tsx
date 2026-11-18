@@ -3,26 +3,34 @@
 import React, { useState, useEffect } from "react";
 import { Sparkles, AlertTriangle, PlusCircle, UserCheck } from "lucide-react";
 
+interface ChildItem {
+  id: string;
+  name: string;
+  avatar: string;
+  currentPoints: number;
+  todayAdded?: number;
+  todayDeducted?: number;
+  todayNet?: number;
+}
+
 interface ScoreCardProps {
-  child: {
-    id: string;
-    name: string;
-    avatar: string;
-    currentPoints: number;
-    todayAdded?: number;
-    todayDeducted?: number;
-    todayNet?: number;
-  } | null;
+  child: ChildItem | null;
+  childrenList?: ChildItem[];
+  onSelectChild?: (childId: string) => void;
+  onOpenAddChild?: () => void;
   onOpenCustomRecord: () => void;
   onUpdateChildName?: (newName: string) => Promise<void>;
 }
 
 /**
  * 孩子积分主看板组件
- * 包含总积分卡片（原生支持负分高亮与引导）、今日收支动态及自由记一笔按钮
+ * 包含多孩子一键切换、总积分卡片（原生支持负分高亮与引导）、今日收支动态及自由记一笔按钮
  */
 export const ScoreCard: React.FC<ScoreCardProps> = ({
   child,
+  childrenList = [],
+  onSelectChild,
+  onOpenAddChild,
   onOpenCustomRecord,
   onUpdateChildName,
 }) => {
@@ -58,6 +66,45 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({
       {/* 背景装饰光晕 */}
       <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
       <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-pink-400/20 rounded-full blur-2xl pointer-events-none" />
+
+      {/* 多孩子切换栏 (支持随时添加与切换孩子) */}
+      <div className="relative z-10 flex items-center space-x-2 overflow-x-auto pb-3 mb-3 scrollbar-none border-b border-white/20">
+        {childrenList.map((c) => {
+          const isSelected = c.id === child?.id;
+          return (
+            <button
+              key={c.id}
+              onClick={() => onSelectChild && onSelectChild(c.id)}
+              className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all shrink-0 ${
+                isSelected
+                  ? "bg-white text-indigo-700 shadow-md scale-102 ring-2 ring-white/50"
+                  : "bg-white/20 text-white hover:bg-white/30 backdrop-blur-md"
+              }`}
+            >
+              <span>{c.avatar}</span>
+              <span>{c.name}</span>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                  isSelected
+                    ? "bg-indigo-100 text-indigo-800"
+                    : "bg-white/20 text-white"
+                }`}
+              >
+                {c.currentPoints}分
+              </span>
+            </button>
+          );
+        })}
+
+        {/* 添加新宝贝按钮 */}
+        <button
+          onClick={onOpenAddChild}
+          className="flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/15 hover:bg-white/25 text-white shrink-0 border border-dashed border-white/40 transition active:scale-95"
+          title="添加新宝贝档案"
+        >
+          <span>+ 宝贝</span>
+        </button>
+      </div>
 
       {/* 顶部孩子信息行 */}
       <div className="relative z-10 flex items-center justify-between mb-4">

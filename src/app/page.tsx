@@ -14,6 +14,7 @@ import {
 import { ScoreCard } from "@/components/ScoreCard";
 import { QuickActionModal } from "@/components/QuickActionModal";
 import { CustomRecordModal } from "@/components/CustomRecordModal";
+import { AddChildModal } from "@/components/AddChildModal";
 import { formatShortTime } from "@/lib/utils";
 
 interface TemplateItem {
@@ -49,7 +50,8 @@ interface RecentRecord {
  * 首页看板：汇总总分、分类呈现常用加扣分事项、支持极速记分与近期流水概览
  */
 export default function HomePage() {
-  const [child, setChild] = useState<ChildData | null>(null);
+  const [childrenList, setChildrenList] = useState<ChildData[]>([]);
+  const [selectedChildId, setSelectedChildId] = useState<string>("");
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [recentRecords, setRecentRecords] = useState<RecentRecord[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>("全部");
@@ -59,6 +61,11 @@ export default function HomePage() {
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateItem | null>(null);
   const [isQuickModalOpen, setIsQuickModalOpen] = useState(false);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [isAddChildModalOpen, setIsAddChildModalOpen] = useState(false);
+
+  // 当前选中的孩子
+  const activeChild =
+    childrenList.find((c) => c.id === selectedChildId) || childrenList[0] || null;
 
   // 加载页面数据
   const fetchPageData = useCallback(async () => {
@@ -77,7 +84,12 @@ export default function HomePage() {
       ]);
 
       if (childJson.success) {
-        setChild(childJson.data);
+        const list: ChildData[] = childJson.data.children || [childJson.data];
+        setChildrenList(list);
+        setSelectedChildId((prev) => {
+          if (prev && list.some((item) => item.id === prev)) return prev;
+          return list[0]?.id || "";
+        });
       }
       if (templatesJson.success) {
         setTemplates(templatesJson.data);
@@ -114,17 +126,19 @@ export default function HomePage() {
 
   // 更新孩子昵称
   const handleUpdateChildName = async (newName: string) => {
-    if (!child) return;
+    if (!activeChild) return;
     try {
       console.log(`[HomePage] 发起更新孩子姓名: ${newName}`);
       const res = await fetch("/api/children", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: child.id, name: newName }),
+        body: JSON.stringify({ id: activeChild.id, name: newName }),
       });
       const json = await res.json();
       if (json.success) {
-        setChild((prev) => (prev ? { ...prev, name: newName } : null));
+        setChildrenList((prev) =>
+          prev.map((c) => (c.id === activeChild.id ? { ...c, name: newName } : c))
+        );
       }
     } catch (e) {
       console.error("[HomePage] 更新姓名失败:", e);
@@ -150,9 +164,12 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
-      {/* 顶部总积分看板 */}
+      {/* 顶部总积分看板 (支持多孩子切换与新增) */}
       <ScoreCard
-        child={child}
+        child={activeChild}
+        childrenList={childrenList}
+        onSelectChild={(id) => setSelectedChildId(id)}
+        onOpenAddChild={() => setIsAddChildModalOpen(true)}
         onOpenCustomRecord={() => setIsCustomModalOpen(true)}
         onUpdateChildName={handleUpdateChildName}
       />
@@ -305,6 +322,7 @@ export default function HomePage() {
       <QuickActionModal
         isOpen={isQuickModalOpen}
         template={selectedTemplate}
+        child={activeChild}
         onClose={() => setIsQuickModalOpen(false)}
         onSubmitSuccess={fetchPageData}
       />
@@ -312,8 +330,19 @@ export default function HomePage() {
       {/* 自由记一笔弹窗 */}
       <CustomRecordModal
         isOpen={isCustomModalOpen}
+        child={activeChild}
         onClose={() => setIsCustomModalOpen(false)}
         onSubmitSuccess={fetchPageData}
+      />
+
+      {/* 添加新宝贝档案弹窗 */}
+      <AddChildModal
+        isOpen={isAddChildModalOpen}
+        onClose={() => setIsAddChildModalOpen(false)}
+        onSuccess={(newChildId) => {
+          fetchPageData();
+          setSelectedChildId(newChildId);
+        }}
       />
     </div>
   );

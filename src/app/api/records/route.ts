@@ -12,25 +12,40 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type"); // "ADD" | "DEDUCT" | null
+    const childId = searchParams.get("childId"); // 特定孩子筛选
     const limit = parseInt(searchParams.get("limit") || "50", 10);
     const page = parseInt(searchParams.get("page") || "1", 10);
     const skip = (page - 1) * limit;
 
     console.log(
-      `[API] 获取积分流水: type=${type || "全部"}, page=${page}, limit=${limit}`
+      `[API] 获取积分流水: type=${type || "全部"}, childId=${childId || "全部"}, page=${page}, limit=${limit}`
     );
 
     const whereClause: {
       type?: string;
+      childId?: string;
     } = {};
 
     if (type && type !== "ALL") {
       whereClause.type = type;
     }
 
+    if (childId && childId !== "ALL") {
+      whereClause.childId = childId;
+    }
+
     const [records, total] = await Promise.all([
       prisma.pointRecord.findMany({
         where: whereClause,
+        include: {
+          child: {
+            select: {
+              id: true,
+              name: true,
+              avatar: true,
+            },
+          },
+        },
         orderBy: [{ recordedAt: "desc" }, { createdAt: "desc" }],
         skip,
         take: limit,

@@ -9,10 +9,16 @@ export const dynamic = "force-dynamic";
  * GET /api/stats
  * 获取近 7 天积分趋势及习惯分布数据
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    console.log("[API] 获取积分趋势统计数据");
-    const child = await prisma.child.findFirst();
+    const { searchParams } = new URL(request.url);
+    const reqChildId = searchParams.get("childId");
+    console.log(`[API] 获取积分趋势统计数据: childId=${reqChildId || "默认"}`);
+
+    const child = reqChildId
+      ? await prisma.child.findUnique({ where: { id: reqChildId } })
+      : await prisma.child.findFirst();
+
     if (!child) {
       return NextResponse.json({
         success: true,
