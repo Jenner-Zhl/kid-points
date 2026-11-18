@@ -1,20 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Check, UserPlus } from "lucide-react";
+import { X, Check, UserPlus, ShieldAlert, Copy, CheckCheck, MessageCircle } from "lucide-react";
 
 interface AddChildModalProps {
   isOpen: boolean;
+  currentCount?: number;
   onClose: () => void;
   onSuccess: (newChildId: string) => void;
 }
 
 /**
  * 添加新孩子档案弹窗
- * 方便多孩家庭随时新增大宝、二宝、三宝，支持设置昵称、专属头像及初始底分
+ * 支持创建大宝、二宝等新档案；当达到全局 10 个上限时，展示联系作者专属卡片
  */
 export const AddChildModal: React.FC<AddChildModalProps> = ({
   isOpen,
+  currentCount = 0,
   onClose,
   onSuccess,
 }) => {
@@ -22,8 +24,24 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
   const [avatar, setAvatar] = useState("👧");
   const [initialPoints, setInitialPoints] = useState(20);
   const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   if (!isOpen) return null;
+
+  const isLimitReached = currentCount >= 10;
+  const authorWechat = "zhanglong__zl";
+
+  // 一键复制作者微信号
+  const handleCopyWechat = async () => {
+    try {
+      await navigator.clipboard.writeText(authorWechat);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.warn("[AddChildModal] 复制微信号失败:", err);
+      alert(`微信号为：${authorWechat}，请长按手动复制`);
+    }
+  };
 
   // 孩子头像 Emoji 候选池
   const avatarList = ["👦", "👧", "👶", "🧒", "👸", "🦸", "🐱", "🐶", "🐻", "🐰"];
@@ -73,8 +91,14 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
         {/* 顶部标题与关闭 */}
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center space-x-2">
-            <UserPlus className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-lg font-bold text-gray-800">添加新宝贝档案</h3>
+            {isLimitReached ? (
+              <ShieldAlert className="w-5 h-5 text-amber-500" />
+            ) : (
+              <UserPlus className="w-5 h-5 text-indigo-600" />
+            )}
+            <h3 className="text-lg font-bold text-gray-800">
+              {isLimitReached ? "宝贝档案配额已满" : "添加新宝贝档案"}
+            </h3>
           </div>
           <button
             onClick={onClose}
@@ -84,95 +108,162 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* 头像选择 */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-2">
-              选择专属头像（当前: {avatar}）
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {avatarList.map((av) => (
+        {/* 达到 10 个上限时的温馨提示与联系作者卡片 */}
+        {isLimitReached ? (
+          <div className="py-6 space-y-5 text-center">
+            <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-3xl mx-auto flex items-center justify-center text-3xl shadow-inner">
+              🔒
+            </div>
+
+            <div className="space-y-1.5">
+              <h4 className="text-base font-black text-gray-800">
+                已达到系统上限（最多 10 位宝贝）
+              </h4>
+              <p className="text-xs text-gray-500 max-w-xs mx-auto leading-relaxed">
+                为防止滥用与保障云端数据库平稳运行，当前系统设定全局上限为 10 个宝贝档案（已满额 10/10）。
+              </p>
+            </div>
+
+            {/* 作者微信联系卡片 */}
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-2xl p-4 text-left">
+              <div className="flex items-center space-x-2 text-xs font-bold text-emerald-800 mb-2">
+                <MessageCircle className="w-4 h-4 text-emerald-600" />
+                <span>如需扩容或特殊支持，请联系作者：</span>
+              </div>
+
+              <div className="flex items-center justify-between bg-white px-3.5 py-2.5 rounded-xl border border-emerald-100 shadow-sm">
+                <div>
+                  <span className="text-[11px] text-gray-400 block">作者微信号</span>
+                  <span className="text-sm font-black text-gray-800 tracking-wider font-mono">
+                    {authorWechat}
+                  </span>
+                </div>
                 <button
-                  key={av}
                   type="button"
-                  onClick={() => setAvatar(av)}
-                  className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all ${
-                    avatar === av
-                      ? "bg-indigo-600 text-white shadow-md scale-110"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                  onClick={handleCopyWechat}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1 transition active:scale-95 ${
+                    copied
+                      ? "bg-emerald-600 text-white"
+                      : "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
                   }`}
                 >
-                  {av}
+                  {copied ? (
+                    <>
+                      <CheckCheck className="w-3.5 h-3.5" />
+                      <span>已复制</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>复制微信</span>
+                    </>
+                  )}
                 </button>
-              ))}
+              </div>
+            </div>
+
+            <div className="pt-2 safe-area-bottom">
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-3 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+              >
+                我知道了
+              </button>
             </div>
           </div>
-
-          {/* 姓名输入 */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">
-              孩子小名 / 昵称 *
-            </label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="例如：贝贝、二宝、欣欣..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-gray-50/50"
-            />
-          </div>
-
-          {/* 初始底分 */}
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">
-              初始激励积分（可为 0）
-            </label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="number"
-                value={initialPoints}
-                onChange={(e) => setInitialPoints(parseInt(e.target.value) || 0)}
-                className="w-24 px-3.5 py-2 rounded-xl border border-gray-200 text-center font-bold text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-              />
-              <div className="flex gap-1">
-                {[0, 10, 20, 50].map((v) => (
+        ) : (
+          /* 正常添加宝贝表单 */
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+            {/* 头像选择 */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-2">
+                选择专属头像（当前: {avatar}）
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {avatarList.map((av) => (
                   <button
-                    key={v}
+                    key={av}
                     type="button"
-                    onClick={() => setInitialPoints(v)}
-                    className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition ${
-                      initialPoints === v
-                        ? "bg-indigo-600 text-white border-indigo-600"
-                        : "bg-gray-100 text-gray-600 border-gray-200"
+                    onClick={() => setAvatar(av)}
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                      avatar === av
+                        ? "bg-indigo-600 text-white shadow-md scale-110"
+                        : "bg-gray-100 hover:bg-gray-200 text-gray-700"
                     }`}
                   >
-                    {v}分
+                    {av}
                   </button>
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* 提交按钮 */}
-          <div className="flex items-center space-x-3 pt-3 safe-area-bottom">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/30 transition active:scale-98 flex items-center justify-center space-x-1.5"
-            >
-              <Check className="w-4 h-4" />
-              <span>{loading ? "正在创建..." : "立即创建档案"}</span>
-            </button>
-          </div>
-        </form>
+            {/* 姓名输入 */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                孩子小名 / 昵称 *
+              </label>
+              <input
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="例如：贝贝、二宝、欣欣..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-gray-50/50"
+              />
+            </div>
+
+            {/* 初始底分 */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">
+                初始激励积分（可为 0）
+              </label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  value={initialPoints}
+                  onChange={(e) => setInitialPoints(parseInt(e.target.value) || 0)}
+                  className="w-24 px-3.5 py-2 rounded-xl border border-gray-200 text-center font-bold text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                />
+                <div className="flex gap-1">
+                  {[0, 10, 20, 50].map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setInitialPoints(v)}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition ${
+                        initialPoints === v
+                          ? "bg-indigo-600 text-white border-indigo-600"
+                          : "bg-gray-100 text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      {v}分
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* 提交按钮 */}
+            <div className="flex items-center space-x-3 pt-3 safe-area-bottom">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-3 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-600/30 transition active:scale-98 flex items-center justify-center space-x-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>{loading ? "正在创建..." : "立即创建档案"}</span>
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );

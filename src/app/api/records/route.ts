@@ -110,6 +110,14 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // 单笔积分变动幅度防手抖上限 (最大 ±100 分)
+    if (Math.abs(finalPoints) > 100) {
+      return NextResponse.json(
+        { success: false, error: "单次积分变动幅度不能超过 ±100 分" },
+        { status: 400 }
+      );
+    }
     if (type === "DEDUCT" && finalPoints > 0) {
       finalPoints = -finalPoints;
     } else if (type === "ADD" && finalPoints < 0) {

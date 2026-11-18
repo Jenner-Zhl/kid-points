@@ -338,6 +338,7 @@ export default function HomePage() {
       {/* 添加新宝贝档案弹窗 */}
       <AddChildModal
         isOpen={isAddChildModalOpen}
+        currentCount={childrenList.length}
         onClose={() => setIsAddChildModalOpen(false)}
         onSuccess={(newChildId) => {
           fetchPageData();

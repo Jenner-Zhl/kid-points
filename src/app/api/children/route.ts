@@ -82,10 +82,24 @@ export async function GET() {
 
 /**
  * POST /api/children
- * 新增一个孩子（支持二宝、三宝扩展）
+ * 新增一个孩子（支持二宝、三宝扩展，设全局上限最多 10 个）
  */
 export async function POST(request: Request) {
   try {
+    // 1. 配额安全防护：检查全局孩子档案数量（最多允许 10 位）
+    const totalCount = await prisma.child.count();
+    if (totalCount >= 10) {
+      console.warn(`[API] 达到全局宝贝数量上限 (${totalCount}/10)，拦截新增请求`);
+      return NextResponse.json(
+        {
+          success: false,
+          error: "已达到系统上限（最多支持 10 位宝贝档案）。如需扩容，请联系作者后台处理（微信：zhanglong__zl）",
+          code: "QUOTA_EXCEEDED",
+        },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { name, avatar, initialPoints } = body;
 
