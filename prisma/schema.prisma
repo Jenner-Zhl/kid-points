@@ -37,6 +37,8 @@ model PointTemplate {
   createdAt     DateTime      @default(now())
 
   records       PointRecord[] // 引用该模板的历史记录
+
+  @@index([isActive, sortOrder])
 }
 
 // 积分历史流水明细表 (只追加历史，保障审计和追溯)
@@ -53,4 +55,6 @@ model PointRecord {
   remark       String?        // 备注详情
   recordedAt   DateTime       @default(now()) // 行为实际发生时间（支持补录）
   createdAt    DateTime       @default(now()) // 录入系统时间
+
+  @@index([childId, recordedAt(sort: Desc)])
 }

@@ -52,6 +52,16 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
+    // 1. 事项模板数量配额防护：最多支持 50 个预设模板，防止恶意刷库或无序膨胀
+    const templateCount = await prisma.pointTemplate.count();
+    if (templateCount >= 50) {
+      console.warn(`[API] 事项模板数量达到上限 (${templateCount}/50)，拒绝新增`);
+      return NextResponse.json(
+        { success: false, error: "事项模板库已达上限（最多 50 个），请删除无用模板后再试" },
+        { status: 400 }
+      );
+    }
+
     const body = await request.json();
     const { title, type, defaultPoints, category, icon, sortOrder } = body;
 
@@ -70,22 +80,40 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // 模板单次预设分值上下限保护 (最大 ±100 分)
+    if (Math.abs(points) > 100) {
+      return NextResponse.json(
+        { success: false, error: "事项预设分值幅度不能超过 ±100 分" },
+        { status: 400 }
+      );
+    }
+
     if (type === "DEDUCT" && points > 0) {
       points = -points;
     } else if (type === "ADD" && points < 0) {
       points = Math.abs(points);
     }
 
-    console.log(`[API] 创建新事项模板: ${title}, type=${type}, points=${points}`);
+    // 安全处理排序权重，防止非数字异常
+    const parsedSortOrder = sortOrder !== undefined ? parseInt(sortOrder, 10) : 0;
+    const finalSortOrder = isNaN(parsedSortOrder) ? 0 : parsedSortOrder;
+
+    // 字符串长度保护，避免恶意超长内容
+    const cleanTitle = title.trim().slice(0, 50);
+    const cleanCategory = (category?.trim() || "日常").slice(0, 20);
+    const cleanIcon = (icon?.trim() || (type === "ADD" ? "🌟" : "⚠️")).slice(0, 10);
+
+    console.log(`[API] 创建新事项模板: ${cleanTitle}, type=${type}, points=${points}`);
 
     const template = await prisma.pointTemplate.create({
       data: {
-        title: title.trim(),
+        title: cleanTitle,
         type,
         defaultPoints: points,
-        category: category?.trim() || "日常",
-        icon: icon || (type === "ADD" ? "🌟" : "⚠️"),
-        sortOrder: sortOrder ? parseInt(sortOrder, 10) : 0,
+        category: cleanCategory,
+        icon: cleanIcon,
+        sortOrder: finalSortOrder,
       },
     });
 

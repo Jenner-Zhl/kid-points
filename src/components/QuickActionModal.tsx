@@ -55,6 +55,15 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
 
   // 提交记分流水
   const handleSubmit = async () => {
+    if (points === 0) {
+      alert("变动分值不能为 0 分");
+      return;
+    }
+    if (Math.abs(points) > 100) {
+      alert("单次积分变动幅度不能超过 ±100 分");
+      return;
+    }
+
     try {
       setLoading(true);
       console.log(

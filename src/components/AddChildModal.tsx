@@ -216,13 +216,19 @@ export const AddChildModal: React.FC<AddChildModalProps> = ({
             {/* 初始底分 */}
             <div>
               <label className="block text-xs font-semibold text-gray-600 mb-1">
-                初始激励积分（可为 0）
+                初始激励积分（±100分以内，可为 0）
               </label>
               <div className="flex items-center space-x-2">
                 <input
                   type="number"
+                  min="-100"
+                  max="100"
                   value={initialPoints}
-                  onChange={(e) => setInitialPoints(parseInt(e.target.value) || 0)}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (isNaN(val)) setInitialPoints(0);
+                    else setInitialPoints(Math.min(100, Math.max(-100, val)));
+                  }}
                   className="w-24 px-3.5 py-2 rounded-xl border border-gray-200 text-center font-bold text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                 />
                 <div className="flex gap-1">

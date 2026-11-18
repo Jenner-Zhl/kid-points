@@ -35,6 +35,14 @@ export const CustomRecordModal: React.FC<CustomRecordModalProps> = ({
       alert("请输入事项名称");
       return;
     }
+    if (pointsValue === 0) {
+      alert("变动分值不能为 0 分");
+      return;
+    }
+    if (Math.abs(pointsValue) > 100) {
+      alert("单次积分变动幅度不能超过 100 分");
+      return;
+    }
 
     try {
       setLoading(true);

@@ -175,17 +175,27 @@ export default function TemplatesPage() {
       {/* 顶部标题与新增按钮 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-black text-gray-800 tracking-tight">
-            事项模板库
-          </h1>
-          <p className="text-xs text-gray-400">定制家规事项与默认分值</p>
+          <div className="flex items-center space-x-2">
+            <h1 className="text-xl font-black text-gray-800 tracking-tight">
+              事项模板库
+            </h1>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
+              {templates.length}/50
+            </span>
+          </div>
+          <p className="text-xs text-gray-400">定制家规事项与默认分值（最多50个）</p>
         </div>
         <button
           onClick={handleOpenCreate}
-          className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 active:scale-95 transition"
+          disabled={templates.length >= 50}
+          className={`flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-white text-xs font-bold shadow-md transition ${
+            templates.length >= 50
+              ? "bg-gray-400 cursor-not-allowed shadow-none"
+              : "bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20 active:scale-95"
+          }`}
         >
           <Plus className="w-4 h-4" />
-          <span>添加新事项</span>
+          <span>{templates.length >= 50 ? "模板已满" : "添加新事项"}</span>
         </button>
       </div>
 

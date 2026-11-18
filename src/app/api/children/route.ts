@@ -109,14 +109,26 @@ export async function POST(request: Request) {
       );
     }
 
+    const cleanName = name.trim().slice(0, 20);
+    const cleanAvatar = (avatar?.trim() || "👦").slice(0, 10);
+
     const startPoints = parseInt(initialPoints, 10) || 0;
-    console.log(`[API] 创建新孩子: name=${name}, avatar=${avatar}, initialPoints=${startPoints}`);
+
+    // 初始积分合理性约束：限制在 ±100 分以内，防止误输或异常输入
+    if (Math.abs(startPoints) > 100) {
+      return NextResponse.json(
+        { success: false, error: "初始激励积分不能超过 ±100 分" },
+        { status: 400 }
+      );
+    }
+
+    console.log(`[API] 创建新孩子: name=${cleanName}, avatar=${cleanAvatar}, initialPoints=${startPoints}`);
 
     const newChild = await prisma.$transaction(async (tx) => {
       const child = await tx.child.create({
         data: {
-          name: name.trim(),
-          avatar: avatar || "👧",
+          name: cleanName,
+          avatar: cleanAvatar,
           currentPoints: startPoints,
         },
       });
@@ -160,13 +172,20 @@ export async function PUT(request: Request) {
     const body = await request.json();
     const { id, name, avatar } = body;
 
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: "缺少孩子档案 ID" },
+        { status: 400 }
+      );
+    }
+
     console.log(`[API] 更新孩子信息: ID=${id}, name=${name}, avatar=${avatar}`);
 
     const updatedChild = await prisma.child.update({
       where: { id },
       data: {
-        name: name?.trim() || undefined,
-        avatar: avatar || undefined,
+        name: name?.trim() ? name.trim().slice(0, 20) : undefined,
+        avatar: avatar?.trim() ? avatar.trim().slice(0, 10) : undefined,
       },
     });
 

@@ -160,21 +160,32 @@ export async function POST(request: Request) {
         `[API] 积分变更核算: 原总分=${targetChild.currentPoints}, 变动=${finalPoints}, 变动后结余=${newBalance}`
       );
 
-      // 3. 插入历史流水明细
+      // 3. 安全处理文本长度与补录时间
+      const cleanTitle = title.trim().slice(0, 50);
+      const cleanRemark = remark?.trim() ? remark.trim().slice(0, 200) : null;
+      let finalRecordedAt = new Date();
+      if (recordedAt) {
+        const parsedDate = new Date(recordedAt);
+        if (!isNaN(parsedDate.getTime())) {
+          finalRecordedAt = parsedDate;
+        }
+      }
+
+      // 4. 插入历史流水明细
       const record = await tx.pointRecord.create({
         data: {
           childId: targetChild.id,
           templateId: templateId || null,
-          title: title.trim(),
+          title: cleanTitle,
           type,
           pointsChange: finalPoints,
           balanceAfter: newBalance,
-          remark: remark?.trim() || null,
-          recordedAt: recordedAt ? new Date(recordedAt) : new Date(),
+          remark: cleanRemark,
+          recordedAt: finalRecordedAt,
         },
       });
 
-      // 4. 更新孩子当前总积分
+      // 5. 更新孩子当前总积分
       const updatedChild = await tx.child.update({
         where: { id: targetChild.id },
         data: {

@@ -23,6 +23,18 @@ export async function PUT(
     let points: number | undefined = undefined;
     if (defaultPoints !== undefined) {
       points = parseInt(defaultPoints, 10);
+      if (isNaN(points)) {
+        return NextResponse.json(
+          { success: false, error: "预设分值必须为有效整数" },
+          { status: 400 }
+        );
+      }
+      if (Math.abs(points) > 100) {
+        return NextResponse.json(
+          { success: false, error: "预设分值幅度不能超过 ±100 分" },
+          { status: 400 }
+        );
+      }
       if (type === "DEDUCT" && points > 0) {
         points = -points;
       } else if (type === "ADD" && points < 0) {
@@ -30,15 +42,22 @@ export async function PUT(
       }
     }
 
+    // 安全处理排序权重
+    let cleanSortOrder: number | undefined = undefined;
+    if (sortOrder !== undefined) {
+      const parsed = parseInt(sortOrder, 10);
+      cleanSortOrder = isNaN(parsed) ? 0 : parsed;
+    }
+
     const updated = await prisma.pointTemplate.update({
       where: { id },
       data: {
-        title: title?.trim() || undefined,
+        title: title ? title.trim().slice(0, 50) : undefined,
         type: type || undefined,
         defaultPoints: points,
-        category: category?.trim() || undefined,
-        icon: icon || undefined,
-        sortOrder: sortOrder !== undefined ? parseInt(sortOrder, 10) : undefined,
+        category: category ? category.trim().slice(0, 20) : undefined,
+        icon: icon ? icon.trim().slice(0, 10) : undefined,
+        sortOrder: cleanSortOrder,
         isActive: isActive !== undefined ? Boolean(isActive) : undefined,
       },
     });
