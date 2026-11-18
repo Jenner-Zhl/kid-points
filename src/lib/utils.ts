@@ -52,3 +52,17 @@ export function formatPoints(points: number): string {
   if (points > 0) return `+${points}`;
   return `${points}`;
 }
+
+/**
+ * 获取北京时间（UTC+8）当天的 00:00:00 对应的真实时间对象
+ * 解决海外 Serverless (如 Vercel 容器在 UTC 时区) 统计“今日加减分”时时区偏移 8 小时的问题
+ */
+export function getBeijingStartOfToday(): Date {
+  const now = new Date();
+  // 计算当前系统相对于 UTC+8 的偏差
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const beijingTime = new Date(utc + 3600000 * 8);
+  beijingTime.setHours(0, 0, 0, 0);
+  // 转回对应的时间戳
+  return new Date(beijingTime.getTime() - 3600000 * 8);
+}

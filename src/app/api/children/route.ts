@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getBeijingStartOfToday } from "@/lib/utils";
 
 // 强制动态路由，防止在 Next.js 构建阶段静态执行数据库查询
 export const dynamic = "force-dynamic";
@@ -25,9 +26,8 @@ export async function GET() {
       });
     }
 
-    // 统计今日加分与扣分汇总
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    // 统计今日加分与扣分汇总 (按北京时间 UTC+8 当日 0 点计算)
+    const startOfToday = getBeijingStartOfToday();
 
     const todayRecords = await prisma.pointRecord.findMany({
       where: {

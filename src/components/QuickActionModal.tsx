@@ -122,14 +122,22 @@ export const QuickActionModal: React.FC<QuickActionModalProps> = ({
             本次{isAdd ? "奖励" : "扣除"}分值（可调整）
           </div>
 
-          <div className="flex items-center justify-center space-x-4">
-            <div
-              className={`text-5xl font-black tracking-tight ${
-                points >= 0 ? "text-emerald-500" : "text-rose-500"
+          <div className="flex items-center justify-center space-x-1">
+            <span
+              className={`text-4xl font-black ${
+                points > 0 ? "text-emerald-500" : points < 0 ? "text-rose-500" : "text-gray-400"
               }`}
             >
-              {points > 0 ? `+${points}` : points}
-            </div>
+              {points > 0 ? "+" : ""}
+            </span>
+            <input
+              type="number"
+              value={points}
+              onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
+              className={`w-28 text-5xl font-black text-center tracking-tight bg-transparent focus:outline-none border-b-2 border-dashed border-gray-200 focus:border-indigo-500 transition ${
+                points > 0 ? "text-emerald-500" : points < 0 ? "text-rose-500" : "text-gray-400"
+              }`}
+            />
           </div>
 
           {/* 快捷微调步进按钮 */}

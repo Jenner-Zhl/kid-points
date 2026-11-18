@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// 强制动态路由
+export const dynamic = "force-dynamic";
+
 /**
  * DELETE /api/records/[id]
  * 撤销/删除一笔积分流水，并安全回滚孩子当前总积分

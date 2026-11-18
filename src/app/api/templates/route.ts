@@ -62,8 +62,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // 确保扣分项保存为负数，加分项保存为正数
+    // 确保扣分项保存为负数，加分项保存为正数，并防止 NaN
     let points = parseInt(defaultPoints, 10);
+    if (isNaN(points)) {
+      return NextResponse.json(
+        { success: false, error: "预设分值必须为有效整数" },
+        { status: 400 }
+      );
+    }
     if (type === "DEDUCT" && points > 0) {
       points = -points;
     } else if (type === "ADD" && points < 0) {

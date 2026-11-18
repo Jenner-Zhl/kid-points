@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Sparkles, AlertTriangle, PlusCircle, UserCheck } from "lucide-react";
 
 interface ScoreCardProps {
@@ -28,6 +28,13 @@ export const ScoreCard: React.FC<ScoreCardProps> = ({
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(child?.name || "小宝");
+
+  // 同步外部传入的孩子姓名
+  useEffect(() => {
+    if (child?.name) {
+      setEditName(child.name);
+    }
+  }, [child?.name]);
 
   const points = child?.currentPoints ?? 0;
   const isNegative = points < 0;

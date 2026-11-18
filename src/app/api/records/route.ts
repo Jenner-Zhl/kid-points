@@ -87,8 +87,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // 确保加分时数值为正，扣分时数值为负
+    // 确保加分时数值为正，扣分时数值为负，并防止非数字输入异常
     let finalPoints = parseInt(pointsChange, 10);
+    if (isNaN(finalPoints)) {
+      return NextResponse.json(
+        { success: false, error: "变动分值必须为有效整数" },
+        { status: 400 }
+      );
+    }
     if (type === "DEDUCT" && finalPoints > 0) {
       finalPoints = -finalPoints;
     } else if (type === "ADD" && finalPoints < 0) {

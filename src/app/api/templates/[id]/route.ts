@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+// 强制动态路由
+export const dynamic = "force-dynamic";
+
 /**
  * PUT /api/templates/[id]
  * 更新指定事项模板（名称、预设分值、图标、状态等）

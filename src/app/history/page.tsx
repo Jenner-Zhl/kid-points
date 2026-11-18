@@ -95,8 +95,8 @@ export default function HistoryPage() {
 
       const json = await res.json();
       if (json.success) {
-        // 本地移除该流水
-        setRecords((prev) => prev.filter((r) => r.id !== record.id));
+        // 重新拉取流水与近 7 天趋势，确保图表与结余同步刷新
+        await fetchRecords();
         alert("已成功撤销该记录，积分已自动恢复！");
       } else {
         alert(json.error || "撤销失败");
